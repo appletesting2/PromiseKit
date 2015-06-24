@@ -21,9 +21,3 @@ extern NSString * const PMKErrorDomain;
 #define PMKJSONError 7l
 #define PMKOperationFailed 8l
 #define PMKTaskError 9l
-
-#define PMKTaskErrorLaunchPathKey @"PMKTaskErrorLaunchPathKey"
-#define PMKTaskErrorArgumentsKey @"PMKTaskErrorArgumentsKey"
-#define PMKTaskErrorStandardOutputKey @"PMKTaskErrorStandardOutputKey"
-#define PMKTaskErrorStandardErrorKey @"PMKTaskErrorStandardErrorKey"
-#define PMKTaskErrorExitStatusKey @"PMKTaskErrorExitStatusKey"
