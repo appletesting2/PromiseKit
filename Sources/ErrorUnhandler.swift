@@ -14,56 +14,26 @@ import Foundation.NSError
  - Warning: Don’t use promises in your handler, or you risk an infinite error loop.
  - Returns: The previous unhandled error handler.
 */
-public var PMKUnhandledErrorHandler = { (error: NSError) -> Void in
+public var PMKUnhandledErrorHandler = { (error: ErrorType) -> Void in
     if !error.cancelled {
-        NSLog("PromiseKit: Unhandled error: %@", error)
+        NSLog("%@", "PromiseKit: Unhandled error: \(error)")
     }
 }
 
-private class Consumable: NSObject {
-    let parentError: NSError
-    var consumed: Bool = false
-
-    deinit {
-        if !consumed {
-            PMKUnhandledErrorHandler(parentError)
-        }
-    }
-    
-    init(parent: NSError) {
-        // we take a copy to avoid a retain cycle. A weak ref
-        // is no good because then the error is deallocated
-        // before we can call PMKUnhandledErrorHandler()
-        parentError = parent.copy() as! NSError
-    }
+func consume(error: ErrorType) {
+//    let pmke = objc_getAssociatedObject(error, &handle) as! Consumable
+//    pmke.consumed = true
 }
 
-private var handle: UInt8 = 0
-
-func consume(error: NSError) {
-    let pmke = objc_getAssociatedObject(error, &handle) as! Consumable
-    pmke.consumed = true
+func unconsume(error: ErrorType) {
+    // if let pmke = objc_getAssociatedObject(error, &handle) as! Consumable? {
+    //     pmke.consumed = false
+    // } else {
+    //     // this is how we know when the error is deallocated
+    //     // because we will be deallocated at the same time
+    //     objc_setAssociatedObject(error, &handle, Consumable(parent: error), .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+    // }
 }
-
-extension AnyPromise {
-    // objc can't see Swift top-level function :(
-    //TODO move this and the one in AnyPromise to a compat something
-    @objc class func __consume(error: NSError) {
-        consume(error)
-    }
-}
-
-func unconsume(error: NSError) {
-    if let pmke = objc_getAssociatedObject(error, &handle) as! Consumable? {
-        pmke.consumed = false
-    } else {
-        // this is how we know when the error is deallocated
-        // because we will be deallocated at the same time
-        objc_setAssociatedObject(error, &handle, Consumable(parent: error), .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
-    }
-}
-
-
 
 private struct ErrorPair: Hashable {
     let domain: String
@@ -100,5 +70,12 @@ extension NSError {
 
     public var cancelled: Bool {
         return cancelledErrorIdentifiers.contains(ErrorPair(domain, code))
+    }
+}
+
+
+extension ErrorType {
+    public var cancelled: Bool {
+        return (self as NSError).cancelled
     }
 }
