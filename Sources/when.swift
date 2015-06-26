@@ -1,8 +1,7 @@
 import Foundation.NSProgress
 
-private func when<T>(promises: [Promise<T>]) -> Promise<Void> {
 
-    //TODO PMKFailingPromiseIndexKey
+private func when<T>(promises: [Promise<T>]) -> Promise<Void> {
 
 #if !PMKDisableProgress
     let progress = NSProgress(totalUnitCount: Int64(promises.count))
@@ -17,7 +16,7 @@ private func when<T>(promises: [Promise<T>]) -> Promise<Void> {
     return Promise { fulfill, reject in
         guard promises.count > 0 else { return fulfill() }
 
-        for promise in promises {
+        for (index, promise) in promises.enumerate() {
             promise.pipe { resolution in
                 guard progress.fractionCompleted < 1 else { return }
 
@@ -25,7 +24,7 @@ private func when<T>(promises: [Promise<T>]) -> Promise<Void> {
                     switch resolution {
                     case .Rejected(let error):
                         progress.completedUnitCount = progress.totalUnitCount
-                        reject(error)
+                        reject(Error.When(index, error))
                     case .Fulfilled:
                         progress.completedUnitCount++
                         if --countdown == 0 {
@@ -44,7 +43,14 @@ private func when<T>(promises: [Promise<T>]) -> Promise<Void> {
  For example:
 
      when(promise1, promise2).then { results in
-        //…
+         //…
+     }.report { error in
+         switch error {
+         case Error.When(let index, NSURLError.NoConnection):
+             //…
+         case Error.When(let index, CLError.NotAuthorized):
+             //…
+         }
      }
 
  - Warning: If *any* of the provided promises reject, the returned promise is immediately rejected with that promise’s rejection. The error’s `userInfo` object is supplemented with `PMKFailingPromiseIndexKey`.
