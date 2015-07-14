@@ -515,9 +515,6 @@ public func firstly<T>(promise: () throws -> Promise<T>) -> Promise<T> {
 }
 
 
-public let PMKOperationQueue = NSOperationQueue()
-
-
 public enum ErrorPolicy {
     case AllErrors
     case AllErrorsExceptCancellation

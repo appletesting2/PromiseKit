@@ -164,6 +164,7 @@ extension NSURLResponse {
     }
 }
 
+private let Q = NSOperationQueue()
 
 private func fetch(var request: NSURLRequest) -> Promise<(NSData, NSHTTPURLResponse)> {
     if request.valueForHTTPHeaderField("User-Agent") == nil {
@@ -173,7 +174,7 @@ private func fetch(var request: NSURLRequest) -> Promise<(NSData, NSHTTPURLRespo
     }
 
     return Promise { fulfill, reject in
-        NSURLConnection.sendAsynchronousRequest(request, queue: PMKOperationQueue) { rsp, data, error in
+        NSURLConnection.sendAsynchronousRequest(request, queue: Q) { rsp, data, error in
             if let error = error {
                 reject(NSURLConnection.Error.UnderlyingCocoaError(request, data, rsp, error))
             } else if let data = data, rsp = rsp as? NSHTTPURLResponse where rsp.statusCode >= 200 && rsp.statusCode < 300 {
