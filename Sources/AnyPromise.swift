@@ -15,9 +15,9 @@ import Foundation.NSError
             switch resolution {
             case .Fulfilled(let value):
                 resolve(value)
-            case .Rejected(let error):
+            case .Rejected(let error, let token):
                 let nserror = error as NSError
-                unconsume(nserror)
+                unconsume(error: nserror, reusingToken: token)
                 resolve(nserror)
             }
         }
@@ -173,7 +173,7 @@ import Foundation.NSError
             var preresolve: ((AnyObject?) -> Void)!
             super.init(resolver: &preresolve)
             resolver = { obj in
-                if obj is NSError { unconsume(obj as! NSError) }
+                if let error = obj as? NSError { unconsume(error: error) }
                 preresolve(obj)
             }
         }
