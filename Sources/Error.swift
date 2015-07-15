@@ -1,4 +1,6 @@
+import Dispatch
 import Foundation.NSError
+import Foundation.NSURLError
 
 public enum Error: ErrorType {
     /**
@@ -32,11 +34,6 @@ private func ==(lhs: ErrorPair, rhs: ErrorPair) -> Bool {
     return lhs.domain == rhs.domain && lhs.code == rhs.code
 }
 
-private var cancelledErrorIdentifiers = Set([
-    ErrorPair(PMKErrorDomain, PMKOperationCancelled),
-    ErrorPair(NSURLErrorDomain, NSURLErrorCancelled)
-])
-
 extension NSError {
     @objc class func cancelledError() -> NSError {
         let info: [NSObject: AnyObject] = [NSLocalizedDescriptionKey: "The operation was cancelled"]
@@ -44,31 +41,48 @@ extension NSError {
     }
 
     /**
-      You may only call this on the main thread.
+      - Warning: You may only call this method on the main thread.
      */
-    public class func registerCancelledErrorDomain(domain: String, code: Int) {
+    @objc public class func registerCancelledErrorDomain(domain: String, code: Int) {
         cancelledErrorIdentifiers.insert(ErrorPair(domain, code))
     }
+}
 
-    // FIXME not thread-safe you idiot! :(
-    // NOTE We could make it so all cancelledErrorIdentifiers must be set at app-start
-    // putting locks on this sort of thing is gross
-    public var cancelled: Bool {
+public protocol CancellableErrorType: ErrorType {
+    var cancelled: Bool { get }
+}
+
+extension NSError: CancellableErrorType {
+    /**
+     - Warning: You may only call this method on the main thread.
+    */
+    @objc public var cancelled: Bool {
         return cancelledErrorIdentifiers.contains(ErrorPair(domain, code))
     }
 }
 
-extension ErrorType {
+
+////////////////////////////////////////// Predefined Cancellation Errors
+private var cancelledErrorIdentifiers = Set([
+    ErrorPair(PMKErrorDomain, PMKOperationCancelled),
+    ErrorPair(NSURLErrorDomain, NSURLErrorCancelled)
+])
+
+extension NSURLError: CancellableErrorType {
     public var cancelled: Bool {
-        return (self as NSError).cancelled
+        return self == .Cancelled
     }
 }
 
 
 //////////////////////////////////////////////////////// Unhandled Errors
 public var PMKUnhandledErrorHandler = { (error: ErrorType) -> Void in
-    if !error.cancelled {
-        NSLog("PromiseKit: Unhandled Error: %@", "\(error)")
+    dispatch_async(dispatch_get_main_queue()) {
+        let cancelled = (error as? CancellableErrorType)?.cancelled ?? false
+                                                       // ^-------^ must be called on main queue
+        if !cancelled {
+            NSLog("PromiseKit: Unhandled Error: %@", "\(error)")
+        }
     }
 }
 
