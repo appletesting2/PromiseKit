@@ -1,7 +1,7 @@
 import Foundation.NSProgress
 
-
 private func when<T>(promises: [Promise<T>]) -> Promise<Void> {
+    guard promises.count > 0 else { return Promise() }
 
 #if !PMKDisableProgress
     let progress = NSProgress(totalUnitCount: Int64(promises.count))
@@ -13,29 +13,31 @@ private func when<T>(promises: [Promise<T>]) -> Promise<Void> {
     var countdown = promises.count
     let barrier = dispatch_queue_create("org.promisekit.barrier.when", DISPATCH_QUEUE_CONCURRENT)
 
-    return Promise { fulfill, reject in
-        guard promises.count > 0 else { return fulfill() }
+    let (rootPromise, fulfill, reject) = Promise<Void>.pendingPromise()
 
-        for (index, promise) in promises.enumerate() {
-            promise.pipe { resolution in
-                guard progress.fractionCompleted < 1 else { return }
-
-                dispatch_barrier_sync(barrier) {
-                    switch resolution {
-                    case .Rejected(let error, let token):
-                        token.consumed = true
+    for (index, promise) in promises.enumerate() {
+        promise.pipe { resolution in
+            dispatch_barrier_sync(barrier) {
+                switch resolution {
+                case .Rejected(let error, let token):
+                    token.consumed = true  // all errors are consumed by the parent Error.When
+                    if rootPromise.pending {
                         progress.completedUnitCount = progress.totalUnitCount
                         reject(Error.When(index, error))
-                    case .Fulfilled:
-                        progress.completedUnitCount++
-                        if --countdown == 0 {
-                            fulfill()
-                        }
+                    }
+                case .Fulfilled:
+                    guard rootPromise.pending else { return }
+
+                    progress.completedUnitCount++
+                    if --countdown == 0 {
+                        fulfill()
                     }
                 }
             }
         }
     }
+
+    return rootPromise
 }
 
 /**
