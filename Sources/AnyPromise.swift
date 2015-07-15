@@ -18,10 +18,8 @@ private func unbox(resolution: Resolution<AnyObject?>) -> AnyObject? {
     private typealias State = UnsealedState<AnyObject?>
 
     /**
-     @return A new AnyPromise bound to a Promise<T>.
-
-     The two promises represent the same task, any changes to either
-     will instantly reflect on both.
+     - Returns: A new AnyPromise bound to a Promise<T?>.
+     The two promises represent the same task, any changes to either will instantly reflect on both.
     */
     public init<T: AnyObject>(bound: Promise<T>) {
         //WARNING copy pasta from below. FIXME how?
@@ -56,11 +54,8 @@ private func unbox(resolution: Resolution<AnyObject?>) -> AnyObject? {
     }
 
     /**
-     @return A new AnyPromise bound to a Promise<[T]>.
-
-     The two promises represent the same task, any changes to either
-     will instantly reflect on both.
-    
+     - Returns: A new `AnyPromise` bound to a `Promise<[T]>`.
+     The two promises represent the same task, any changes to either will instantly reflect on both.
      The value is converted to an NSArray so Objective-C can use it.
     */
     public init<T: AnyObject>(bound: Promise<[T]>) {
@@ -79,12 +74,9 @@ private func unbox(resolution: Resolution<AnyObject?>) -> AnyObject? {
     }
 
     /**
-    @return A new AnyPromise bound to a Promise<[T]>.
-
-    The two promises represent the same task, any changes to either
-    will instantly reflect on both.
-
-    The value is converted to an NSArray so Objective-C can use it.
+     - Returns: A new AnyPromise bound to a `Promise<[T:U]>`.
+     The two promises represent the same task, any changes to either will instantly reflect on both.
+     The value is converted to an NSDictionary so Objective-C can use it.
     */
     public init<T: AnyObject, U: AnyObject>(bound: Promise<[T:U]>) {
         //WARNING copy pasta from above. FIXME how?
@@ -101,10 +93,19 @@ private func unbox(resolution: Resolution<AnyObject?>) -> AnyObject? {
         }
     }
 
+    /**
+     - Returns: A new AnyPromise bound to a `Promise<Int>`.
+     The two promises represent the same task, any changes to either will instantly reflect on both.
+     The value is converted to an NSNumber so Objective-C can use it.
+    */
     convenience public init(bound: Promise<Int>) {
         self.init(bound: bound.then(on: zalgo) { NSNumber(integer: $0) })
     }
 
+    /**
+     - Returns: A new AnyPromise bound to a `Promise<Void>`.
+     The two promises represent the same task, any changes to either will instantly reflect on both.
+    */
     convenience public init(bound: Promise<Void>) {
         self.init(bound: bound.then(on: zalgo) { _ -> AnyObject? in return nil })
     }
@@ -153,8 +154,7 @@ private func unbox(resolution: Resolution<AnyObject?>) -> AnyObject? {
 
     /**
      A promise starts pending and eventually resolves.
-
-     @return True if the promise has not yet resolved.
+     - Returns: `true` if the promise has not yet resolved.
     */
     @objc public var pending: Bool {
         return state.get() == nil
@@ -162,19 +162,15 @@ private func unbox(resolution: Resolution<AnyObject?>) -> AnyObject? {
 
     /**
      A promise starts pending and eventually resolves.
-
-     @return True if the promise has resolved.
+     - Returns: `true` if the promise has resolved.
     */
     @objc public var resolved: Bool {
         return !pending
     }
 
     /**
-     A promise starts pending and eventually resolves.
-    
-     A fulfilled promise is resolved and succeeded.
-
-     @return True if the promise was fulfilled.
+     A fulfilled promise has resolved successfully.
+     - Returns: `true` if the promise was fulfilled.
     */
     @objc public var fulfilled: Bool {
         switch state.get() {
@@ -186,11 +182,8 @@ private func unbox(resolution: Resolution<AnyObject?>) -> AnyObject? {
     }
 
     /**
-     A promise starts pending and eventually resolves.
-    
-     A rejected promise is resolved and failed.
-
-     @return True if the promise was rejected.
+     A rejected promise has resolved without success.
+     - Returns: `true` if the promise was rejected.
     */
     @objc public var rejected: Bool {
         switch state.get() {
